@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, LogIn } from "lucide-react";
 import { authenticateUser } from '../actions';
+import Link from 'next/link';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
@@ -93,12 +94,18 @@ export default function LoginPage() {
             </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-                <LogIn className="mr-2 h-4 w-4" /> {isSubmitting ? 'Logging in...' : 'Login'}
-            </Button>
-            <p className="text-xs text-center text-muted-foreground w-full">
-                Hint: Use <code className="font-mono p-1 bg-muted rounded">admin@example.com</code> or <code className="font-mono p-1 bg-muted rounded">user@example.com</code> with password <code className="font-mono p-1 bg-muted rounded">password</code>.
-            </p>
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  <LogIn className="mr-2 h-4 w-4" /> {isSubmitting ? 'Logging in...' : 'Login'}
+              </Button>
+              <div className="text-center text-sm">
+                Don't have an account?{' '}
+                <Link href="/register" className="underline">
+                  Register
+                </Link>
+              </div>
+              <p className="text-xs text-center text-muted-foreground w-full">
+                  Hint: Use <code className="font-mono p-1 bg-muted rounded">admin@example.com</code> or <code className="font-mono p-1 bg-muted rounded">user@example.com</code> with password <code className="font-mono p-1 bg-muted rounded">password</code>.
+              </p>
             </CardFooter>
         </form>
       </Card>

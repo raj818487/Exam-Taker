@@ -42,7 +42,7 @@ export function Header() {
     return '/login';
   };
 
-  if (pathname.startsWith('/admin') || pathname === '/login') {
+  if (pathname.startsWith('/admin') || pathname === '/login' || pathname === '/register') {
     return null; 
   }
 

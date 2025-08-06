@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader } from 'lucide-react';
+import { Header } from '@/components/Header';
 
 export default function AdminLayout({
   children,
