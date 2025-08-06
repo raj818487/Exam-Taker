@@ -60,12 +60,24 @@ db.exec(createQuizAssignmentsTable);
 
 // --- Initial Data Seeding ---
 function seedData() {
-  db.exec('DELETE FROM quiz_assignments');
-  db.exec('DELETE FROM options');
-  db.exec('DELETE FROM questions');
-  db.exec('DELETE FROM quizzes');
-  db.exec('DELETE FROM users');
-  
+  const userCountCheck = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
+  if (userCountCheck.count > 0) {
+    // This is a simple way to reset the DB in development.
+    // A more robust migration system would be needed for production.
+    db.exec('DROP TABLE IF EXISTS quiz_assignments');
+    db.exec('DROP TABLE IF EXISTS options');
+    db.exec('DROP TABLE IF EXISTS questions');
+    db.exec('DROP TABLE IF EXISTS quizzes');
+    db.exec('DROP TABLE IF EXISTS users');
+
+    // Re-create tables after dropping
+    db.exec(createUsersTable);
+    db.exec(createQuizzesTable);
+    db.exec(createQuestionsTable);
+    db.exec(createOptionsTable);
+    db.exec(createQuizAssignmentsTable);
+  }
+
   const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
   if (userCount.count === 0) {
     console.log('Seeding initial users...');
@@ -138,11 +150,10 @@ function seedData() {
   }
 }
 
-// Since this is an in-memory database, we need to re-seed it on every app reload
-// in development. In a production environment, you would use a persistent database.
-// This check ensures that seeding only happens on the server.
-if (typeof window === 'undefined' && process.env.NODE_ENV !== 'production') {
+// In development, we want to reset the DB on every run
+if (process.env.NODE_ENV === 'development') {
     seedData();
 }
+
 
 export { db };
