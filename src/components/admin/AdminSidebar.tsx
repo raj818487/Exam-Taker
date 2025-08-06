@@ -17,13 +17,23 @@ import {
   Settings,
   PlusCircle,
   BookHeart,
+  LogOut,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '../ui/button';
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem('userRole');
+    }
+    router.push('/login');
+    router.refresh();
+  };
 
   const menuItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -60,9 +70,12 @@ export function AdminSidebar() {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="flex-col gap-2">
          <Button asChild variant="outline" className="w-full">
             <Link href="/">Back to Site</Link>
+         </Button>
+         <Button variant="ghost" className="w-full" onClick={handleLogout}>
+            <LogOut className="mr-2 h-4 w-4" /> Logout
          </Button>
       </SidebarFooter>
     </Sidebar>

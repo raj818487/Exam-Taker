@@ -2,9 +2,45 @@
 
 import Link from 'next/link';
 import { Button } from './ui/button';
-import { BookHeart, LogIn } from 'lucide-react';
+import { BookHeart, LogIn, UserCircle, LogOut } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export function Header() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const role = localStorage.getItem('userRole');
+      setUserRole(role);
+    }
+  }, [pathname]); 
+
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('userRole');
+    }
+    setUserRole(null);
+    router.push('/login');
+    router.refresh();
+  };
+
+  const getDashboardLink = () => {
+    if (userRole === 'admin') {
+      return '/admin/dashboard';
+    }
+    if (userRole === 'user') {
+      return '/dashboard';
+    }
+    return '/login';
+  };
+
+  if (pathname.startsWith('/admin')) {
+    return null; // Don't show the main header on admin pages
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 max-w-screen-2xl items-center">
@@ -19,18 +55,29 @@ export function Header() {
           >
             Quizzes
           </Link>
-          <Link
-            href="/admin/dashboard"
-            className="transition-colors hover:text-foreground/80 text-foreground/60"
-          >
-            Admin Dashboard
-          </Link>
+          {userRole && (
+             <Link
+             href={getDashboardLink()}
+             className="transition-colors hover:text-foreground/80 text-foreground/60"
+           >
+             Dashboard
+           </Link>
+          )}
         </nav>
         <div className="flex flex-1 items-center justify-end">
-          <Button>
-            <LogIn className="mr-2 h-4 w-4" />
-            Login
+         {userRole ? (
+            <Button onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+         ) : (
+          <Button asChild>
+            <Link href="/login">
+              <LogIn className="mr-2 h-4 w-4" />
+              Login
+            </Link>
           </Button>
+         )}
         </div>
       </div>
     </header>

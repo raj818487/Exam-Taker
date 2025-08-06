@@ -1,3 +1,5 @@
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { QuizCard } from '@/components/quiz/QuizCard';
 import { quizzes } from '@/lib/data';
 import { BookOpen } from 'lucide-react';
