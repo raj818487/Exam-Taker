@@ -1,5 +1,5 @@
 import type { Quiz, Question, Option } from './types';
-import db from './db';
+import { db } from './db';
 
 type QuizRow = {
   id: number;
