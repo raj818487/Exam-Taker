@@ -6,7 +6,7 @@ import {
 } from '@/ai/flows/intelligent-question-shuffle';
 import { revalidatePath } from 'next/cache';
 import type { User } from '@/lib/types';
-import db from '@/lib/db';
+import { db } from '@/lib/db';
 
 export async function shuffleQuestionsAction(questions: string[]): Promise<{
   shuffled?: string[];

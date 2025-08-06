@@ -108,4 +108,4 @@ function seedData() {
 
 seedData();
 
-export default db;
+export { db };
