@@ -48,7 +48,7 @@ export type UserFormValues = z.infer<typeof userSchema>;
 export function UserForm({ user, open, onOpenChange, onFormSubmit }: UserFormProps) {
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
-    defaultValues: user || {
+    defaultValues: user ? { ...user, password: '' } : {
       name: '',
       email: '',
       role: 'user',
@@ -60,7 +60,7 @@ export function UserForm({ user, open, onOpenChange, onFormSubmit }: UserFormPro
 
   React.useEffect(() => {
     if (open) {
-      reset(user || {
+      reset(user ? { ...user, password: '' } : {
         name: '',
         email: '',
         role: 'user',
