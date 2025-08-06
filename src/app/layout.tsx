@@ -6,6 +6,7 @@ import { Header } from '@/components/Header';
 export const metadata: Metadata = {
   title: 'QuizMaster Pro',
   description: 'The ultimate platform for creating and taking quizzes.',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
