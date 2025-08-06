@@ -1,6 +1,8 @@
 import { QuizBuilder } from "@/components/admin/QuizBuilder";
+import { getUsers } from "@/app/actions";
 
-export default function NewQuizPage() {
+export default async function NewQuizPage() {
+  const users = await getUsers();
   return (
     <div className="space-y-8">
       <header>
@@ -9,7 +11,7 @@ export default function NewQuizPage() {
           Build your quiz from scratch or use our AI tools to help you out.
         </p>
       </header>
-      <QuizBuilder />
+      <QuizBuilder users={users}/>
     </div>
   );
 }

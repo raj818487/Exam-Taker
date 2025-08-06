@@ -1,9 +1,11 @@
 import { QuizBuilder } from "@/components/admin/QuizBuilder";
 import { getQuizById } from "@/lib/data";
 import { notFound } from "next/navigation";
+import { getUsers } from "@/app/actions";
 
-export default function EditQuizPage({ params }: { params: { id: string } }) {
+export default async function EditQuizPage({ params }: { params: { id: string } }) {
     const quiz = getQuizById(params.id);
+    const users = await getUsers();
 
     if(!quiz) {
         return notFound();
@@ -17,7 +19,7 @@ export default function EditQuizPage({ params }: { params: { id: string } }) {
           Modify the details of your quiz.
         </p>
       </header>
-      <QuizBuilder quiz={quiz} />
+      <QuizBuilder quiz={quiz} users={users} />
     </div>
   );
 }

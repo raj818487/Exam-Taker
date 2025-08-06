@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { QuizCard } from '@/components/quiz/QuizCard';
-import { getQuizzes } from '@/lib/data';
+import { getPublicQuizzes } from '@/lib/data';
 import { BookOpen } from 'lucide-react';
 
 export default function Home() {
-  const quizzes = getQuizzes();
+  const quizzes = getPublicQuizzes();
   return (
     <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
       <header className="text-center mb-12">

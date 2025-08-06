@@ -4,24 +4,35 @@ import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Loader, BookOpen } from "lucide-react";
 import { QuizCard } from '@/components/quiz/QuizCard';
-import { getQuizzes } from '@/lib/data'; // Note: This will not be reactive. For this prototype, it's fine.
+import { getQuizzesForUserAction } from '@/app/actions';
+import type { Quiz } from '@/lib/types';
+
 
 export default function UserDashboardPage() {
     const router = useRouter();
     const [isAuth, setIsAuth] = useState(false);
     const [loading, setLoading] = useState(true);
-
-    // In a real app, this would be fetched client-side or passed as a prop
-    const quizzes = getQuizzes();
+    const [quizzes, setQuizzes] = useState<Quiz[]>([]);
 
     useEffect(() => {
         const role = localStorage.getItem('userRole');
-        if (role !== 'user') {
+        const userId = localStorage.getItem('userId');
+
+        if (role !== 'user' || !userId) {
             router.replace('/login?error=unauthorized_user');
-        } else {
-            setIsAuth(true);
-        }
-        setLoading(false);
+            return;
+        } 
+        
+        setIsAuth(true);
+
+        const fetchQuizzes = async () => {
+            const userQuizzes = await getQuizzesForUserAction(userId);
+            setQuizzes(userQuizzes);
+            setLoading(false);
+        };
+
+        fetchQuizzes();
+
     }, [router]);
 
     if (loading || !isAuth) {
@@ -52,7 +63,7 @@ export default function UserDashboardPage() {
                 <div className="col-span-full flex flex-col items-center justify-center h-64 rounded-lg border-2 border-dashed border-border bg-card">
                     <BookOpen className="w-12 h-12 text-muted-foreground" />
                     <p className="mt-4 text-lg text-muted-foreground">No quizzes available yet.</p>
-                    <p className="mt-1 text-sm text-muted-foreground">An administrator needs to add some quizzes.</p>
+                    <p className="mt-1 text-sm text-muted-foreground">Check back later or contact an administrator.</p>
                 </div>
                 )}
             </div>

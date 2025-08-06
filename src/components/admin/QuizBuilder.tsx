@@ -7,15 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { shuffleQuestionsAction, upsertQuiz } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, PlusCircle, Sparkles } from 'lucide-react';
-import { useState, useTransition } from 'react';
-import { QuestionType, Quiz } from '@/lib/types';
+import { Trash2, PlusCircle, Sparkles, UserCheck } from 'lucide-react';
+import { useState, useTransition, useEffect } from 'react';
+import { QuestionType, Quiz, User, QuizType } from '@/lib/types';
 import { useRouter } from 'next/navigation';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { ScrollArea } from '../ui/scroll-area';
 
 const optionSchema = z.object({
   id: z.string().optional(),
@@ -35,6 +37,8 @@ const quizSchema = z.object({
   title: z.string().min(1, 'Quiz title is required.'),
   description: z.string().optional(),
   timeLimit: z.coerce.number().min(1, 'Time limit must be at least 1 minute.').default(10),
+  quizType: z.enum(['public', 'private']).default('public'),
+  assignedUserIds: z.array(z.string()).optional(),
   questions: z.array(questionSchema).min(1, 'A quiz must have at least one question.'),
 });
 
@@ -42,15 +46,16 @@ type QuizFormValues = z.infer<typeof quizSchema>;
 
 interface QuizBuilderProps {
   quiz?: Quiz;
+  users: User[];
 }
 
-export function QuizBuilder({ quiz }: QuizBuilderProps) {
+export function QuizBuilder({ quiz, users }: QuizBuilderProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [shuffleInput, setShuffleInput] = useState('');
 
-  const defaultValues = quiz ? {
+  const defaultValues: QuizFormValues = quiz ? {
       ...quiz,
       questions: quiz.questions.map(q => ({
         ...q,
@@ -63,6 +68,8 @@ export function QuizBuilder({ quiz }: QuizBuilderProps) {
       title: '',
       description: '',
       timeLimit: 10,
+      quizType: 'public',
+      assignedUserIds: [],
       questions: [{ text: '', questionType: 'multiple-choice' as QuestionType, options: [{ text: '', isCorrect: true }] }],
   }
 
@@ -75,6 +82,8 @@ export function QuizBuilder({ quiz }: QuizBuilderProps) {
     control: form.control,
     name: 'questions',
   });
+
+  const quizType = form.watch('quizType');
 
   const handleShuffle = () => {
     const questionsToShuffle = shuffleInput.split('\n').filter(q => q.trim() !== '');
@@ -173,6 +182,101 @@ export function QuizBuilder({ quiz }: QuizBuilderProps) {
                   </FormItem>
                 )}
               />
+            </CardContent>
+          </Card>
+
+           <Card>
+            <CardHeader>
+              <CardTitle>Quiz Type & Access</CardTitle>
+              <CardDescription>Choose if the quiz is public or private and assign users if necessary.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                 <FormField
+                    control={form.control}
+                    name="quizType"
+                    render={({ field }) => (
+                        <FormItem className="space-y-3">
+                        <FormLabel>Quiz Type</FormLabel>
+                        <FormControl>
+                            <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex flex-col space-y-1"
+                            >
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                <RadioGroupItem value="public" />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                Public - Anyone can take this quiz.
+                                </FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                <RadioGroupItem value="private" />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                Private - Only assigned users can take this quiz.
+                                </FormLabel>
+                            </FormItem>
+                            </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    {quizType === 'private' && (
+                        <FormField
+                        control={form.control}
+                        name="assignedUserIds"
+                        render={({ field }) => (
+                            <FormItem>
+                            <div className="mb-4">
+                                <FormLabel className="text-base">Assign Users</FormLabel>
+                                <FormDescription>
+                                Select the users who can access this private quiz.
+                                </FormDescription>
+                            </div>
+                            <ScrollArea className="h-40 w-full rounded-md border p-4">
+                                {users.filter(u => u.role === 'user').map((user) => (
+                                    <FormField
+                                    key={user.id}
+                                    control={form.control}
+                                    name="assignedUserIds"
+                                    render={({ field }) => {
+                                        return (
+                                        <FormItem
+                                            key={user.id}
+                                            className="flex flex-row items-start space-x-3 space-y-0 mb-2"
+                                        >
+                                            <FormControl>
+                                            <Checkbox
+                                                checked={field.value?.includes(user.id)}
+                                                onCheckedChange={(checked) => {
+                                                return checked
+                                                    ? field.onChange([...(field.value || []), user.id])
+                                                    : field.onChange(
+                                                        field.value?.filter(
+                                                        (value) => value !== user.id
+                                                        )
+                                                    )
+                                                }}
+                                            />
+                                            </FormControl>
+                                            <FormLabel className="font-normal">
+                                                {user.name} ({user.email})
+                                            </FormLabel>
+                                        </FormItem>
+                                        )
+                                    }}
+                                    />
+                                ))}
+                            </ScrollArea>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                    )}
             </CardContent>
           </Card>
           

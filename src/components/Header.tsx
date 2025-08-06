@@ -25,6 +25,7 @@ export function Header() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('userRole');
       localStorage.removeItem('userName');
+      localStorage.removeItem('userId');
     }
     setUserRole(null);
     setUserName(null);

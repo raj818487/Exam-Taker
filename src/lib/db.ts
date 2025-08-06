@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS quizzes (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
   description TEXT,
-  timeLimit INTEGER NOT NULL
+  timeLimit INTEGER NOT NULL,
+  quizType TEXT NOT NULL CHECK(quizType IN ('public', 'private')) DEFAULT 'public'
 );`;
 
 const createQuestionsTable = `
@@ -39,15 +40,31 @@ CREATE TABLE IF NOT EXISTS options (
   FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
 );`;
 
+const createQuizAssignmentsTable = `
+CREATE TABLE IF NOT EXISTS quiz_assignments (
+    user_id INTEGER NOT NULL,
+    quiz_id INTEGER NOT NULL,
+    PRIMARY KEY (user_id, quiz_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
+);`;
+
 
 db.exec(createUsersTable);
 db.exec(createQuizzesTable);
 db.exec(createQuestionsTable);
 db.exec(createOptionsTable);
+db.exec(createQuizAssignmentsTable);
 
 
 // --- Initial Data Seeding ---
 function seedData() {
+  db.exec('DELETE FROM quiz_assignments');
+  db.exec('DELETE FROM options');
+  db.exec('DELETE FROM questions');
+  db.exec('DELETE FROM quizzes');
+  db.exec('DELETE FROM users');
+  
   const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
   if (userCount.count === 0) {
     console.log('Seeding initial users...');
@@ -65,13 +82,14 @@ function seedData() {
   const quizCount = db.prepare('SELECT COUNT(*) as count FROM quizzes').get() as { count: number };
    if (quizCount.count === 0) {
     console.log('Seeding initial quizzes...');
-    const insertQuiz = db.prepare('INSERT INTO quizzes (title, description, timeLimit) VALUES (?, ?, ?)');
+    const insertQuiz = db.prepare('INSERT INTO quizzes (title, description, timeLimit, quizType) VALUES (?, ?, ?, ?)');
     const insertQuestion = db.prepare('INSERT INTO questions (quiz_id, text, questionType) VALUES (?, ?, ?)');
     const insertOption = db.prepare('INSERT INTO options (question_id, text, isCorrect) VALUES (?, ?, ?)');
+    const insertAssignment = db.prepare('INSERT INTO quiz_assignments (user_id, quiz_id) VALUES (?, ?)');
 
     const seedTransaction = db.transaction(() => {
-        // Quiz 1
-        const quiz1Info = insertQuiz.run('General Knowledge Challenge', 'A fun quiz to test your general knowledge across various domains.', 10);
+        // Quiz 1 (Public)
+        const quiz1Info = insertQuiz.run('General Knowledge Challenge', 'A fun quiz to test your general knowledge across various domains.', 10, 'public');
         const quiz1Id = quiz1Info.lastInsertRowid;
 
         const q1Info = insertQuestion.run(quiz1Id, 'What is the capital of France?', 'multiple-choice');
@@ -88,8 +106,8 @@ function seedData() {
         insertOption.run(q3Info.lastInsertRowid, 'jupiter', 1);
 
 
-        // Quiz 2
-        const quiz2Info = insertQuiz.run('Science & Nature', 'Explore the wonders of the natural world and the laws of science.', 15);
+        // Quiz 2 (Public)
+        const quiz2Info = insertQuiz.run('Science & Nature', 'Explore the wonders of the natural world and the laws of science.', 15, 'public');
         const quiz2Id = quiz2Info.lastInsertRowid;
 
         const q4Info = insertQuestion.run(quiz2Id, 'What is H2O more commonly known as?', 'text');
@@ -100,6 +118,19 @@ function seedData() {
         insertOption.run(q5Info.lastInsertRowid, 'Blue Whale', 1);
         insertOption.run(q5Info.lastInsertRowid, 'Giraffe', 0);
         insertOption.run(q5Info.lastInsertRowid, 'Great White Shark', 0);
+
+        // Quiz 3 (Private)
+        const quiz3Info = insertQuiz.run('Advanced Mathematics', 'A challenging quiz for math enthusiasts.', 30, 'private');
+        const quiz3Id = quiz3Info.lastInsertRowid;
+
+        const q6Info = insertQuestion.run(quiz3Id, 'What is the value of Pi to two decimal places?', 'text');
+        insertOption.run(q6Info.lastInsertRowid, '3.14', 1);
+
+        const regularUser = db.prepare('SELECT id FROM users WHERE email = ?').get('user@example.com') as {id: number};
+        if(regularUser) {
+            insertAssignment.run(regularUser.id, quiz3Id);
+        }
+
     });
 
     seedTransaction();

@@ -8,16 +8,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { PlusCircle, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Globe, Lock } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
-import type { Quiz } from '@/lib/types';
+import type { Quiz, User } from '@/lib/types';
 import { deleteQuiz } from '@/app/actions';
+import { Badge } from '../ui/badge';
 
 interface QuizListClientProps {
     quizzes: Quiz[];
+    users: User[];
 }
 
-export function QuizListClient({ quizzes: initialQuizzes }: QuizListClientProps) {
+export function QuizListClient({ quizzes: initialQuizzes, users }: QuizListClientProps) {
     const router = useRouter();
     const { toast } = useToast();
     const [quizzes, setQuizzes] = useState(initialQuizzes);
@@ -76,6 +78,7 @@ export function QuizListClient({ quizzes: initialQuizzes }: QuizListClientProps)
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Title</TableHead>
+                                <TableHead className="hidden md:table-cell">Type</TableHead>
                                 <TableHead className="hidden md:table-cell">Questions</TableHead>
                                 <TableHead className="hidden md:table-cell">Time Limit</TableHead>
                                 <TableHead><span className="sr-only">Actions</span></TableHead>
@@ -86,6 +89,12 @@ export function QuizListClient({ quizzes: initialQuizzes }: QuizListClientProps)
                                 quizzes.map((quiz) => (
                                     <TableRow key={quiz.id}>
                                         <TableCell className="font-medium">{quiz.title}</TableCell>
+                                        <TableCell className="hidden md:table-cell">
+                                            <Badge variant={quiz.quizType === 'public' ? 'secondary' : 'default'} className="capitalize">
+                                                {quiz.quizType === 'public' ? <Globe className="mr-1.5 h-3 w-3" /> : <Lock className="mr-1.5 h-3 w-3" />}
+                                                {quiz.quizType}
+                                            </Badge>
+                                        </TableCell>
                                         <TableCell className="hidden md:table-cell">{quiz.questions.length}</TableCell>
                                         <TableCell className="hidden md:table-cell">{quiz.timeLimit} mins</TableCell>
                                         <TableCell className="text-right">
@@ -109,7 +118,7 @@ export function QuizListClient({ quizzes: initialQuizzes }: QuizListClientProps)
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center">
+                                    <TableCell colSpan={5} className="h-24 text-center">
                                         No quizzes found.
                                     </TableCell>
                                 </TableRow>

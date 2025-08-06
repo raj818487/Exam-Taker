@@ -7,6 +7,7 @@ import {
 import { revalidatePath } from 'next/cache';
 import type { User, Quiz, Question } from '@/lib/types';
 import { db } from '@/lib/db';
+import { getQuizzesForUser } from '@/lib/data';
 
 export async function shuffleQuestionsAction(questions: string[]): Promise<{
   shuffled?: string[];
@@ -121,14 +122,20 @@ export async function deleteUser(userId: string): Promise<{ success?: boolean; e
 
 
 // --- Quiz Management Actions ---
-type QuizData = Omit<Quiz, 'id' | 'questions'> & { id?: string, questions: (Omit<Question, 'id' | 'options' | 'correctAnswers'> & { options: Omit<Question['options'][0], 'id'>[], isCorrect?: boolean[] | boolean })[] };
+export async function getQuizzesForUserAction(userId: string): Promise<Quiz[]> {
+    return getQuizzesForUser(userId);
+}
+
 
 export async function upsertQuiz(quizData: any): Promise<{ quiz?: Quiz; error?: string }> {
-  const insertQuizStmt = db.prepare('INSERT INTO quizzes (title, description, timeLimit) VALUES (?, ?, ?)');
-  const updateQuizStmt = db.prepare('UPDATE quizzes SET title = ?, description = ?, timeLimit = ? WHERE id = ?');
+  const insertQuizStmt = db.prepare('INSERT INTO quizzes (title, description, timeLimit, quizType) VALUES (?, ?, ?, ?)');
+  const updateQuizStmt = db.prepare('UPDATE quizzes SET title = ?, description = ?, timeLimit = ?, quizType = ? WHERE id = ?');
   const insertQuestionStmt = db.prepare('INSERT INTO questions (quiz_id, text, questionType) VALUES (?, ?, ?)');
   const insertOptionStmt = db.prepare('INSERT INTO options (question_id, text, isCorrect) VALUES (?, ?, ?)');
   const deleteQuestionsStmt = db.prepare('DELETE FROM questions WHERE quiz_id = ?');
+  const deleteAssignmentsStmt = db.prepare('DELETE FROM quiz_assignments WHERE quiz_id = ?');
+  const insertAssignmentStmt = db.prepare('INSERT INTO quiz_assignments (user_id, quiz_id) VALUES (?, ?)');
+
 
   try {
     const result = db.transaction(() => {
@@ -136,12 +143,12 @@ export async function upsertQuiz(quizData: any): Promise<{ quiz?: Quiz; error?: 
       if (quizData.id) {
         // Update
         quizId = parseInt(quizData.id, 10);
-        updateQuizStmt.run(quizData.title, quizData.description, quizData.timeLimit || 10, quizId);
+        updateQuizStmt.run(quizData.title, quizData.description, quizData.timeLimit || 10, quizData.quizType, quizId);
         // Delete old questions to replace them
         deleteQuestionsStmt.run(quizId);
       } else {
         // Create
-        const info = insertQuizStmt.run(quizData.title, quizData.description, quizData.timeLimit || 10);
+        const info = insertQuizStmt.run(quizData.title, quizData.description, quizData.timeLimit || 10, quizData.quizType);
         quizId = info.lastInsertRowid;
       }
 
@@ -155,6 +162,16 @@ export async function upsertQuiz(quizData: any): Promise<{ quiz?: Quiz; error?: 
           }
         }
       }
+
+      // Handle assignments for private quizzes
+      deleteAssignmentsStmt.run(quizId);
+      if (quizData.quizType === 'private' && quizData.assignedUserIds) {
+          for (const userId of quizData.assignedUserIds) {
+              insertAssignmentStmt.run(parseInt(userId, 10), quizId);
+          }
+      }
+
+
       return { id: quizId.toString() };
     })();
 

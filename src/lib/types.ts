@@ -1,4 +1,5 @@
 export type QuestionType = 'multiple-choice' | 'true-false' | 'text';
+export type QuizType = 'public' | 'private';
 
 export interface Option {
   id: string;
@@ -18,7 +19,9 @@ export interface Quiz {
   title: string;
   description: string;
   timeLimit: number; // in minutes
+  quizType: QuizType;
   questions: Question[];
+  assignedUserIds?: string[];
 }
 
 export type AnswerMap = Record<string, string[]>;

@@ -42,6 +42,7 @@ export default function LoginPage() {
       if (typeof window !== 'undefined') {
         localStorage.setItem('userRole', user.role);
         localStorage.setItem('userName', user.name);
+        localStorage.setItem('userId', user.id);
       }
       if (user.role === 'admin') {
         router.push('/admin/dashboard');
