@@ -18,18 +18,30 @@ import {
   PlusCircle,
   BookHeart,
   LogOut,
+  ChevronLeft,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '../ui/button';
+import { useEffect, useState } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [userName, setUserName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const name = localStorage.getItem('userName');
+      setUserName(name);
+    }
+  }, []);
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
         localStorage.removeItem('userRole');
+        localStorage.removeItem('userName');
     }
     router.push('/login');
     router.refresh();
@@ -58,7 +70,7 @@ export function AdminSidebar() {
             <SidebarMenuItem key={item.label}>
               <SidebarMenuButton
                 asChild
-                isActive={pathname === item.href}
+                isActive={pathname.startsWith(item.href)}
                 className="w-full justify-start"
               >
                 <Link href={item.href}>
@@ -70,13 +82,27 @@ export function AdminSidebar() {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter className="flex-col gap-2">
-         <Button asChild variant="outline" className="w-full">
-            <Link href="/">Back to Site</Link>
-         </Button>
-         <Button variant="ghost" className="w-full" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" /> Logout
-         </Button>
+      <SidebarFooter className="flex-col gap-2 items-start">
+         <div className='p-2 w-full'>
+            <div className="flex items-center gap-3 p-2 rounded-lg bg-sidebar-accent">
+                <Avatar>
+                    <AvatarImage src={`https://placehold.co/40x40.png`} alt={userName || 'Admin'} data-ai-hint="user avatar" />
+                    <AvatarFallback>{userName?.charAt(0).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-sidebar-accent-foreground">{userName || 'Admin'}</span>
+                    <span className="text-xs text-muted-foreground">Administrator</span>
+                </div>
+            </div>
+         </div>
+         <div className='p-2 w-full space-y-2'>
+            <Button asChild variant="outline" className="w-full justify-start">
+                <Link href="/"><ChevronLeft /> Back to Site</Link>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
+                <LogOut /> Logout
+            </Button>
+         </div>
       </SidebarFooter>
     </Sidebar>
   );

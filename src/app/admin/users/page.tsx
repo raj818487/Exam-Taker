@@ -1,5 +1,8 @@
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
-import { Users } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { users } from "@/lib/users";
+import { User, Shield } from "lucide-react";
 
 export default function UsersPage() {
     return (
@@ -11,12 +14,41 @@ export default function UsersPage() {
                 </p>
             </header>
             
-            <Card className="flex flex-col items-center justify-center h-96 border-2 border-dashed">
-                <CardContent className="text-center">
-                   <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                   <h2 className="text-2xl font-semibold">User Management Coming Soon</h2>
-                   <p className="text-muted-foreground mt-2">This section is under construction.</p>
+            <Card>
+                <CardHeader>
+                    <CardTitle>All Users</CardTitle>
+                    <CardDescription>A list of all registered users on the platform.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead>Role</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {users.map((user) => (
+                                <TableRow key={user.id}>
+                                    <TableCell className="font-medium">{user.name}</TableCell>
+                                    <TableCell>{user.email}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
+                                            {user.role === 'admin' ? <Shield className="mr-1.5" /> : <User className="mr-1.5" />}
+                                            {user.role}
+                                        </Badge>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
                 </CardContent>
+                <CardFooter>
+                    <div className="text-xs text-muted-foreground">
+                        Showing <strong>1-{users.length}</strong> of <strong>{users.length}</strong> users.
+                    </div>
+                </CardFooter>
             </Card>
         </div>
     );

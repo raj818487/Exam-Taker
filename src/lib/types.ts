@@ -22,3 +22,11 @@ export interface Quiz {
 }
 
 export type AnswerMap = Record<string, string[]>;
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+  role: 'admin' | 'user';
+}

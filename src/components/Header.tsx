@@ -10,19 +10,24 @@ export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const role = localStorage.getItem('userRole');
+      const name = localStorage.getItem('userName');
       setUserRole(role);
+      setUserName(name);
     }
   }, [pathname]); 
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('userRole');
+      localStorage.removeItem('userName');
     }
     setUserRole(null);
+    setUserName(null);
     router.push('/login');
     router.refresh();
   };
@@ -37,8 +42,8 @@ export function Header() {
     return '/login';
   };
 
-  if (pathname.startsWith('/admin')) {
-    return null; // Don't show the main header on admin pages
+  if (pathname.startsWith('/admin') || pathname === '/login') {
+    return null; 
   }
 
   return (
@@ -64,12 +69,15 @@ export function Header() {
            </Link>
           )}
         </nav>
-        <div className="flex flex-1 items-center justify-end">
+        <div className="flex flex-1 items-center justify-end gap-4">
          {userRole ? (
-            <Button onClick={handleLogout}>
+           <>
+            <span className="text-sm font-medium text-muted-foreground hidden sm:inline">Welcome, {userName}</span>
+            <Button onClick={handleLogout} variant="outline">
               <LogOut className="mr-2 h-4 w-4" />
               Logout
             </Button>
+           </>
          ) : (
           <Button asChild>
             <Link href="/login">
