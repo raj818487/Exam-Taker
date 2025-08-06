@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getUsers } from "@/app/actions";
 
 export default async function EditQuizPage({ params }: { params: { id: string } }) {
-    const quiz = getQuizById(params.id);
+    const quiz = await getQuizById(params.id);
     const users = await getUsers();
 
     if(!quiz) {

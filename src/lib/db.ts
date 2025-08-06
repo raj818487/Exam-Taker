@@ -1,3 +1,4 @@
+
 import Database from 'better-sqlite3';
 
 const db = new Database('quiz.db');
@@ -139,7 +140,8 @@ function seedData() {
 
 // Since this is an in-memory database, we need to re-seed it on every app reload
 // in development. In a production environment, you would use a persistent database.
-if (process.env.NODE_ENV !== 'production') {
+// This check ensures that seeding only happens on the server.
+if (typeof window === 'undefined' && process.env.NODE_ENV !== 'production') {
     seedData();
 }
 

@@ -3,14 +3,14 @@ import { getQuizById } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import type { AnswerMap } from '@/lib/types';
 
-export default function ResultsPage({
+export default async function ResultsPage({
   params,
   searchParams,
 }: {
   params: { id: string };
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
-  const quiz = getQuizById(params.id);
+  const quiz = await getQuizById(params.id);
 
   if (!quiz) {
     notFound();
