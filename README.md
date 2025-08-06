@@ -45,3 +45,54 @@ Admins have full control over the platform's content and users.
     - **Server Actions:** Next.js server actions are used for form submissions and data mutations without needing separate API endpoints.
 - **Database:**
     - **better-sqlite3:** A lightweight, file-based SQL database for local development and data persistence.
+
+## Getting Started
+
+Follow these instructions to get the project up and running on your local machine for development and testing purposes.
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/en) (version 18 or later)
+- [npm](https://www.npmjs.com/) or a compatible package manager
+
+### Installation
+
+1.  **Clone the repository (or download the source code):**
+    ```bash
+    git clone https://github.com/your-username/quizmaster-pro.git
+    cd quizmaster-pro
+    ```
+
+2.  **Install dependencies:**
+    This command will install all the necessary packages defined in `package.json`.
+    ```bash
+    npm install
+    ```
+
+3.  **Set up environment variables:**
+    Create a new file named `.env` in the root of your project directory. You will need to add your Google AI (Gemini) API key for the AI features to work.
+
+    ```env
+    # .env file
+    GEMINI_API_KEY=YOUR_API_KEY_HERE
+    ```
+
+### Running the Application
+
+This project requires two separate processes to be run concurrently in two separate terminal windows: the Next.js frontend and the Genkit AI service.
+
+1.  **Run the Next.js Development Server:**
+    In your first terminal, run the following command to start the main web application.
+    ```bash
+    npm run dev
+    ```
+    The application will be available at `http://localhost:9002`.
+
+2.  **Run the Genkit AI Service:**
+    In your second terminal, run this command to start the Genkit development server, which handles the AI-powered features.
+    ```bash
+    npm run genkit:dev
+    ```
+    This service runs in the background and is called by the Next.js server when AI functionalities are requested.
+
+Once both services are running, you can open your browser to `http://localhost:9002` to see the application. The database (`quiz.db`) will be created and seeded with initial data automatically on the first run.
