@@ -2,12 +2,17 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
-import { User, CheckSquare, BarChart, Loader } from "lucide-react";
+import { Loader, BookOpen } from "lucide-react";
+import { QuizCard } from '@/components/quiz/QuizCard';
+import { getQuizzes } from '@/lib/data'; // Note: This will not be reactive. For this prototype, it's fine.
 
 export default function UserDashboardPage() {
     const router = useRouter();
     const [isAuth, setIsAuth] = useState(false);
     const [loading, setLoading] = useState(true);
+
+    // In a real app, this would be fetched client-side or passed as a prop
+    const quizzes = getQuizzes();
 
     useEffect(() => {
         const role = localStorage.getItem('userRole');
@@ -36,50 +41,21 @@ export default function UserDashboardPage() {
         <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
             <header className="mb-8">
                 <h1 className="text-3xl font-bold font-headline tracking-tight">User Dashboard</h1>
-                <p className="text-muted-foreground mt-1">Welcome! Here's a summary of your quiz activity.</p>
+                <p className="text-muted-foreground mt-1">Welcome! Choose a quiz to start.</p>
             </header>
 
-            <div className="grid gap-4 md:grid-cols-3">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Quizzes Taken</CardTitle>
-                        <CheckSquare className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">5</div>
-                        <p className="text-xs text-muted-foreground">Keep up the great work!</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Average Score</CardTitle>
-                        <BarChart className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">82%</div>
-                        <p className="text-xs text-muted-foreground">+5% from last month</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Profile</CardTitle>
-                        <User className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">User</div>
-                        <p className="text-xs text-muted-foreground">Your profile details here.</p>
-                    </CardContent>
-                </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {quizzes.map((quiz) => (
+                <QuizCard key={quiz.id} quiz={quiz} />
+                ))}
+                {quizzes.length === 0 && (
+                <div className="col-span-full flex flex-col items-center justify-center h-64 rounded-lg border-2 border-dashed border-border bg-card">
+                    <BookOpen className="w-12 h-12 text-muted-foreground" />
+                    <p className="mt-4 text-lg text-muted-foreground">No quizzes available yet.</p>
+                    <p className="mt-1 text-sm text-muted-foreground">An administrator needs to add some quizzes.</p>
+                </div>
+                )}
             </div>
-             <Card className="mt-8">
-                 <CardHeader>
-                     <CardTitle>Recent Quiz Results</CardTitle>
-                     <CardDescription>A list of your most recent quiz attempts.</CardDescription>
-                 </CardHeader>
-                 <CardContent>
-                    <p className="text-muted-foreground">Your recent quiz results will appear here.</p>
-                 </CardContent>
-             </Card>
         </div>
     );
 }

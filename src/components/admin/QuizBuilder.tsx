@@ -10,43 +10,65 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { shuffleQuestionsAction } from '@/app/actions';
+import { shuffleQuestionsAction, upsertQuiz } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, PlusCircle, Sparkles } from 'lucide-react';
 import { useState, useTransition } from 'react';
-import { QuestionType } from '@/lib/types';
+import { QuestionType, Quiz } from '@/lib/types';
+import { useRouter } from 'next/navigation';
 
 const optionSchema = z.object({
+  id: z.string().optional(),
   text: z.string().min(1, 'Option text cannot be empty.'),
   isCorrect: z.boolean().default(false),
 });
 
 const questionSchema = z.object({
+  id: z.string().optional(),
   text: z.string().min(1, 'Question text cannot be empty.'),
   questionType: z.enum(['multiple-choice', 'true-false', 'text']),
   options: z.array(optionSchema),
 });
 
 const quizSchema = z.object({
+  id: z.string().optional(),
   title: z.string().min(1, 'Quiz title is required.'),
   description: z.string().optional(),
+  timeLimit: z.coerce.number().min(1, 'Time limit must be at least 1 minute.').default(10),
   questions: z.array(questionSchema).min(1, 'A quiz must have at least one question.'),
 });
 
 type QuizFormValues = z.infer<typeof quizSchema>;
 
-export function QuizBuilder() {
+interface QuizBuilderProps {
+  quiz?: Quiz;
+}
+
+export function QuizBuilder({ quiz }: QuizBuilderProps) {
+  const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [shuffleInput, setShuffleInput] = useState('');
 
-  const form = useForm<QuizFormValues>({
-    resolver: zodResolver(quizSchema),
-    defaultValues: {
+  const defaultValues = quiz ? {
+      ...quiz,
+      questions: quiz.questions.map(q => ({
+        ...q,
+        options: q.options.map(o => ({
+            ...o,
+            isCorrect: q.correctAnswers.includes(o.id) || q.correctAnswers.includes(o.text.toLowerCase())
+        }))
+      }))
+  } : {
       title: '',
       description: '',
-      questions: [{ text: '', questionType: 'multiple-choice', options: [{ text: '', isCorrect: false }] }],
-    },
+      timeLimit: 10,
+      questions: [{ text: '', questionType: 'multiple-choice' as QuestionType, options: [{ text: '', isCorrect: true }] }],
+  }
+
+  const form = useForm<QuizFormValues>({
+    resolver: zodResolver(quizSchema),
+    defaultValues,
   });
 
   const { fields, append, remove, replace } = useFieldArray({
@@ -90,10 +112,21 @@ export function QuizBuilder() {
   };
 
   function onSubmit(data: QuizFormValues) {
-    console.log(data);
-    toast({
-      title: 'Quiz Saved (Simulation)',
-      description: <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4"><code className="text-white">{JSON.stringify(data, null, 2)}</code></pre>,
+     startTransition(async () => {
+      const result = await upsertQuiz(data);
+      if (result.error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error Saving Quiz',
+          description: result.error,
+        });
+      } else {
+        toast({
+          title: `Quiz ${quiz ? 'Updated' : 'Created'}!`,
+          description: 'Your quiz has been saved successfully.',
+        });
+        router.push('/admin/quizzes');
+      }
     });
   }
 
@@ -104,7 +137,7 @@ export function QuizBuilder() {
           <Card>
             <CardHeader>
               <CardTitle>Quiz Details</CardTitle>
-              <CardDescription>Enter the title and description for your new quiz.</CardDescription>
+              <CardDescription>Enter the title, description, and time limit for your quiz.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -125,6 +158,17 @@ export function QuizBuilder() {
                   <FormItem>
                     <FormLabel>Description (Optional)</FormLabel>
                     <FormControl><Textarea placeholder="A fun quiz about capital cities..." {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="timeLimit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Time Limit (minutes)</FormLabel>
+                    <FormControl><Input type="number" placeholder="10" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -160,7 +204,11 @@ export function QuizBuilder() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Question Type</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={(value) => {
+                            field.onChange(value);
+                            // Reset options when type changes
+                            form.setValue(`questions.${index}.options`, []);
+                        }} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a question type" />
@@ -185,7 +233,9 @@ export function QuizBuilder() {
             </CardContent>
           </Card>
           
-          <Button type="submit" disabled={isPending}>Save Quiz</Button>
+          <Button type="submit" disabled={isPending}>
+            {isPending ? 'Saving...' : (quiz ? 'Update Quiz' : 'Save Quiz')}
+          </Button>
         </form>
 
         <Card className="lg:sticky top-20">
@@ -216,19 +266,44 @@ export function QuizBuilder() {
 
 
 function OptionsArray({name, questionIndex}: {name: `questions.${number}.options`, questionIndex: number}) {
-    const { control, getValues } = useFormContext<QuizFormValues>();
-    const { fields, append, remove } = useFieldArray({
+    const { control, getValues, setValue } = useFormContext<QuizFormValues>();
+    const { fields, append, remove, replace } = useFieldArray({
         control,
         name,
     });
 
     const questionType = getValues(`questions.${questionIndex}.questionType`);
 
-    if(questionType === 'text') return null;
-
-    if (questionType === 'true-false' && fields.length === 0) {
-        append([{text: 'True', isCorrect: false}, {text: 'False', isCorrect: false}]);
+    if(questionType === 'text') {
+        if (fields.length === 0) {
+            append({text: '', isCorrect: true});
+        }
+        return (
+             <div className="space-y-2 pl-4 border-l">
+                 <h4 className="font-medium text-sm">Correct Answer</h4>
+                 <FormField
+                    control={control}
+                    name={`${name}.0.text`}
+                    render={({ field }) => (
+                        <FormItem className="flex-1">
+                             <FormLabel className="sr-only">Correct Answer</FormLabel>
+                            <FormControl><Input placeholder="Enter the correct answer (case-insensitive)" {...field} /></FormControl>
+                        </FormItem>
+                    )}
+                />
+                 <p className="text-sm text-muted-foreground">The user's answer will be checked against this value, case-insensitively.</p>
+             </div>
+        )
     }
+
+    if (questionType === 'true-false') {
+        if (fields.length !== 2) {
+            replace([{text: 'True', isCorrect: false}, {text: 'False', isCorrect: false}]);
+        }
+    }
+    
+    // Don't render anything if there are no fields for true/false yet
+    if (questionType === 'true-false' && fields.length !== 2) return null;
 
     return (
         <div className="space-y-2 pl-4 border-l">

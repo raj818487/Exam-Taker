@@ -103,9 +103,7 @@ export default function LoginPage() {
                   Register
                 </Link>
               </div>
-              <p className="text-xs text-center text-muted-foreground w-full">
-                  Hint: Use <code className="font-mono p-1 bg-muted rounded">admin@example.com</code> or <code className="font-mono p-1 bg-muted rounded">user@example.com</code> with password <code className="font-mono p-1 bg-muted rounded">password</code>.
-              </p>
+              
             </CardFooter>
         </form>
       </Card>

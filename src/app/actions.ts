@@ -5,7 +5,7 @@ import {
   IntelligentQuestionShuffleInput,
 } from '@/ai/flows/intelligent-question-shuffle';
 import { revalidatePath } from 'next/cache';
-import type { User } from '@/lib/types';
+import type { User, Quiz, Question } from '@/lib/types';
 import { db } from '@/lib/db';
 
 export async function shuffleQuestionsAction(questions: string[]): Promise<{
@@ -112,6 +112,78 @@ export async function deleteUser(userId: string): Promise<{ success?: boolean; e
     }
 
     revalidatePath('/admin/users');
+    return { success: true };
+  } catch (e) {
+    console.error(e);
+    return { error: 'An unexpected database error occurred.' };
+  }
+}
+
+
+// --- Quiz Management Actions ---
+type QuizData = Omit<Quiz, 'id' | 'questions'> & { id?: string, questions: (Omit<Question, 'id' | 'options' | 'correctAnswers'> & { options: Omit<Question['options'][0], 'id'>[], isCorrect?: boolean[] | boolean })[] };
+
+export async function upsertQuiz(quizData: any): Promise<{ quiz?: Quiz; error?: string }> {
+  const insertQuizStmt = db.prepare('INSERT INTO quizzes (title, description, timeLimit) VALUES (?, ?, ?)');
+  const updateQuizStmt = db.prepare('UPDATE quizzes SET title = ?, description = ?, timeLimit = ? WHERE id = ?');
+  const insertQuestionStmt = db.prepare('INSERT INTO questions (quiz_id, text, questionType) VALUES (?, ?, ?)');
+  const insertOptionStmt = db.prepare('INSERT INTO options (question_id, text, isCorrect) VALUES (?, ?, ?)');
+  const deleteQuestionsStmt = db.prepare('DELETE FROM questions WHERE quiz_id = ?');
+
+  try {
+    const result = db.transaction(() => {
+      let quizId: number | bigint;
+      if (quizData.id) {
+        // Update
+        quizId = parseInt(quizData.id, 10);
+        updateQuizStmt.run(quizData.title, quizData.description, quizData.timeLimit || 10, quizId);
+        // Delete old questions to replace them
+        deleteQuestionsStmt.run(quizId);
+      } else {
+        // Create
+        const info = insertQuizStmt.run(quizData.title, quizData.description, quizData.timeLimit || 10);
+        quizId = info.lastInsertRowid;
+      }
+
+      for (const q of quizData.questions) {
+        const questionInfo = insertQuestionStmt.run(quizId, q.text, q.questionType);
+        const questionId = questionInfo.lastInsertRowid;
+
+        if (q.options) {
+          for (const o of q.options) {
+            insertOptionStmt.run(questionId, o.text, o.isCorrect ? 1 : 0);
+          }
+        }
+      }
+      return { id: quizId.toString() };
+    })();
+
+    revalidatePath('/admin/quizzes');
+    revalidatePath(`/admin/quizzes/${result.id}/edit`);
+    revalidatePath('/');
+    revalidatePath('/dashboard');
+
+    return { quiz: { ...quizData, id: result.id } };
+
+  } catch (e) {
+    console.error(e);
+    return { error: 'An unexpected database error occurred while saving the quiz.' };
+  }
+}
+
+export async function deleteQuiz(quizId: string): Promise<{ success?: boolean; error?: string }> {
+  try {
+    const id = parseInt(quizId, 10);
+    const stmt = db.prepare('DELETE FROM quizzes WHERE id = ?');
+    const info = stmt.run(id);
+    
+    if (info.changes === 0) {
+      return { error: 'Quiz not found.' };
+    }
+
+    revalidatePath('/admin/quizzes');
+    revalidatePath('/');
+    revalidatePath('/dashboard');
     return { success: true };
   } catch (e) {
     console.error(e);
