@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, LogIn } from "lucide-react";
-import { users } from '@/lib/users';
+import { authenticateUser } from '../actions';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
@@ -34,8 +34,8 @@ export default function LoginPage() {
 
   const { formState: { errors, isSubmitting }, setError } = form;
 
-  const handleLogin = (data: LoginFormValues) => {
-    const user = users.find(u => u.email === data.email && u.password === data.password);
+  const handleLogin = async (data: LoginFormValues) => {
+    const user = await authenticateUser(data.email, data.password);
 
     if (user) {
       if (typeof window !== 'undefined') {

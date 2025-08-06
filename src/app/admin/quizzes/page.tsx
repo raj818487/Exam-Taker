@@ -1,4 +1,4 @@
-import { quizzes } from "@/lib/data";
+import { getQuizzes } from "@/lib/data";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import Link from "next/link";
 import { PlusCircle, MoreHorizontal, FileText } from "lucide-react";
 
 export default function AllQuizzesPage() {
+    const quizzes = getQuizzes();
     return (
         <div className="space-y-8">
             <header className="flex justify-between items-center">

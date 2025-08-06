@@ -1,84 +1,84 @@
-import type { Quiz } from './types';
+import type { Quiz, Question, Option } from './types';
+import db from './db';
 
-export const quizzes: Quiz[] = [
-  {
-    id: '1',
-    title: 'General Knowledge Challenge',
-    description: 'A fun quiz to test your general knowledge across various domains.',
-    timeLimit: 10,
-    questions: [
-      {
-        id: 'q1',
-        text: 'What is the capital of France?',
-        questionType: 'multiple-choice',
-        options: [
-          { id: 'q1o1', text: 'Berlin' },
-          { id: 'q1o2', text: 'Madrid' },
-          { id: 'q1o3', text: 'Paris' },
-          { id: 'q1o4', text: 'Rome' },
-        ],
-        correctAnswers: ['q1o3'],
-      },
-      {
-        id: 'q2',
-        text: 'The Great Wall of China is visible from the Moon.',
-        questionType: 'true-false',
-        options: [
-          { id: 'q2o1', text: 'True' },
-          { id: 'q2o2', text: 'False' },
-        ],
-        correctAnswers: ['q2o2'],
-      },
-      {
-        id: 'q3',
-        text: 'What is the largest planet in our solar system?',
-        questionType: 'text',
-        options: [],
-        correctAnswers: ['jupiter'],
-      },
-      {
-        id: 'q4',
-        text: 'Which of the following are primary colors?',
-        questionType: 'multiple-choice',
-        options: [
-          { id: 'q4o1', text: 'Red' },
-          { id: 'q4o2', text: 'Green' },
-          { id: 'q4o3', text: 'Blue' },
-          { id: 'q4o4', text: 'Yellow' },
-        ],
-        correctAnswers: ['q4o1', 'q4o3', 'q4o4'],
-      },
-    ],
-  },
-  {
-    id: '2',
-    title: 'Science & Nature',
-    description: 'Explore the wonders of the natural world and the laws of science.',
-    timeLimit: 15,
-    questions: [
-      {
-        id: 'q5',
-        text: 'What is H2O more commonly known as?',
-        questionType: 'text',
-        options: [],
-        correctAnswers: ['water'],
-      },
-      {
-        id: 'q6',
-        text: 'Which is the largest mammal?',
-        questionType: 'multiple-choice',
-        options: [
-          { id: 'q6o1', text: 'Elephant' },
-          { id: 'q6o2', text: 'Blue Whale' },
-          { id: 'q6o3', text: 'Giraffe' },
-          { id: 'q6o4', text: 'Great White Shark' },
-        ],
-        correctAnswers: ['q6o2'],
-      },
-    ],
-  },
-];
+type QuizRow = {
+  id: number;
+  title: string;
+  description: string;
+  timeLimit: number;
+};
 
-export const getQuizById = (id: string): Quiz | undefined => {
-  return quizzes.find((quiz) => quiz.id === id);
+type QuestionRow = {
+  id: number;
+  text: string;
+  questionType: 'multiple-choice' | 'true-false' | 'text';
+};
+
+type OptionRow = {
+  id: number;
+  text: string;
+  isCorrect: 0 | 1;
+};
+
+function mapRowsToQuiz(quizRow: QuizRow, questionRows: (QuestionRow & { options: OptionRow[] })[]): Quiz {
+    return {
+        id: quizRow.id.toString(),
+        title: quizRow.title,
+        description: quizRow.description,
+        timeLimit: quizRow.timeLimit,
+        questions: questionRows.map(q => {
+            const correctAnswers = q.options
+                .filter(o => o.isCorrect)
+                .map(o => q.questionType === 'text' ? o.text.toLowerCase() : o.id.toString());
+
+            return {
+                id: q.id.toString(),
+                text: q.text,
+                questionType: q.questionType,
+                options: q.options.map(o => ({
+                    id: o.id.toString(),
+                    text: o.text,
+                })),
+                correctAnswers: correctAnswers,
+            };
+        })
+    };
+}
+
+export function getQuizzes(): Quiz[] {
+    const quizStmt = db.prepare('SELECT * FROM quizzes');
+    const quizRows = quizStmt.all() as QuizRow[];
+    
+    const questionStmt = db.prepare('SELECT * FROM questions WHERE quiz_id = ?');
+    const optionStmt = db.prepare('SELECT * FROM options WHERE question_id = ?');
+
+    return quizRows.map(quizRow => {
+        const questionRows = questionStmt.all(quizRow.id) as QuestionRow[];
+        const questionsWithOptions = questionRows.map(q => {
+            const optionRows = optionStmt.all(q.id) as OptionRow[];
+            return {...q, options: optionRows};
+        });
+        return mapRowsToQuiz(quizRow, questionsWithOptions);
+    });
+};
+
+export function getQuizById(id: string): Quiz | undefined {
+  const quizId = parseInt(id, 10);
+  if (isNaN(quizId)) return undefined;
+
+  const quizStmt = db.prepare('SELECT * FROM quizzes WHERE id = ?');
+  const quizRow = quizStmt.get(quizId) as QuizRow | undefined;
+  
+  if (!quizRow) return undefined;
+
+  const questionStmt = db.prepare('SELECT * FROM questions WHERE quiz_id = ?');
+  const questionRows = questionStmt.all(quizRow.id) as QuestionRow[];
+
+  const optionStmt = db.prepare('SELECT * FROM options WHERE question_id = ?');
+  const questionsWithOptions = questionRows.map(q => {
+    const optionRows = optionStmt.all(q.id) as OptionRow[];
+    return {...q, options: optionRows};
+  });
+  
+  return mapRowsToQuiz(quizRow, questionsWithOptions);
 };
