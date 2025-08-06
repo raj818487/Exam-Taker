@@ -137,6 +137,10 @@ function seedData() {
   }
 }
 
-seedData();
+// Since this is an in-memory database, we need to re-seed it on every app reload
+// in development. In a production environment, you would use a persistent database.
+if (process.env.NODE_ENV !== 'production') {
+    seedData();
+}
 
 export { db };
