@@ -60,24 +60,6 @@ db.exec(createQuizAssignmentsTable);
 
 // --- Initial Data Seeding ---
 function seedData() {
-  const userCountCheck = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
-  if (userCountCheck.count > 0) {
-    // This is a simple way to reset the DB in development.
-    // A more robust migration system would be needed for production.
-    db.exec('DROP TABLE IF EXISTS quiz_assignments');
-    db.exec('DROP TABLE IF EXISTS options');
-    db.exec('DROP TABLE IF EXISTS questions');
-    db.exec('DROP TABLE IF EXISTS quizzes');
-    db.exec('DROP TABLE IF EXISTS users');
-
-    // Re-create tables after dropping
-    db.exec(createUsersTable);
-    db.exec(createQuizzesTable);
-    db.exec(createQuestionsTable);
-    db.exec(createOptionsTable);
-    db.exec(createQuizAssignmentsTable);
-  }
-
   const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
   if (userCount.count === 0) {
     console.log('Seeding initial users...');
@@ -150,7 +132,7 @@ function seedData() {
   }
 }
 
-// In development, we want to reset the DB on every run
+// In development, seed the DB only if it's empty
 if (process.env.NODE_ENV === 'development') {
     seedData();
 }
