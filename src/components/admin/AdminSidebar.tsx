@@ -28,9 +28,9 @@ export function AdminSidebar() {
   const menuItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/quizzes/new', label: 'Create Quiz', icon: PlusCircle },
-    { href: '#', label: 'All Quizzes', icon: FileText },
-    { href: '#', label: 'Users', icon: Users },
-    { href: '#', label: 'Settings', icon: Settings },
+    { href: '/admin/quizzes', label: 'All Quizzes', icon: FileText },
+    { href: '/admin/users', label: 'Users', icon: Users },
+    { href: '/admin/settings', label: 'Settings', icon: Settings },
   ];
 
   return (
